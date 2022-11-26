@@ -1,0 +1,18 @@
+svg 
+{
+    border: 1px solid green;
+}
+
+canvas 
+{
+    border: 1px solid rgb(17, 0, 128);
+}
+
+.container{
+    width:1200px;
+}
+.draw-area
+{
+  width:40%;
+  margin: 20px;
+}
