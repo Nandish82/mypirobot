@@ -1,0 +1,31 @@
+
+<robot>
+
+<link>
+    <visual>
+        <geometry>
+        <origin>
+        <material>
+    </visual>
+
+    <collision>
+        <geometry>
+        <origin>
+    </collision>
+
+    <inertial>
+        <mass>
+        <origin>
+        <inertia>
+    <inertial>
+
+</link>
+
+<joint name="link_1" type="revolute">
+    <parent  link="slider_link">
+    <child link="arm_link"/>
+    <origin xyz="0.25 0 0.15" rpy="0 0 0"/>
+</joint>
+
+
+</robot>
