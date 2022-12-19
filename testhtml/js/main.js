@@ -24,11 +24,15 @@ function main()
     svg.appendChild(link_1.createSVGElement());
     svg.appendChild(link_2.createSVGElement());
 
-    pauseBrowser(10000);
+    pauseBrowser(10);
     console.log("timer out");
 
     const g=document.getElementById('base-link-2');
     g.setAttributeNS(null,'transform','matrix(2,0,0,-2,100,400)');
+
+    const canv=document.getElementById("myCanvas");
+    link_1.addToCanvas(canv);
+    link_2.addToCanvas(canv);
     
 
 }

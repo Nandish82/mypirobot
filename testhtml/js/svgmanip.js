@@ -20,10 +20,24 @@ class link{
         // they are seperated by a '#'
         this.id=id;
         this.transform=transform;
-        this.path=path;
-        this.style=style;
+        this.path=path.split('#');
+        this.style=style.split('#');
         this.joints=joints; //coordinate of joints i.e where they can connects
         this.jointCount=0;
+        this.numericalT=this.str2Mat(this.transform);
+    }
+
+    str2Mat(transform)
+    {
+        // the transform matrix is given in a string of the form "matrix(a,b,c,d,e,f)"
+        // extract the elements and put it in an array of 2x3 matrix [a c e;b d e]
+        let pattern =/-?[0-9]\d*(\.\d+)?/g;
+        let result=transform.match(pattern);
+        let matrix=result.map(x=>x*1); // the result[x]*1 converts string to number
+        console.log("the string to number conversion is:"+matrix);
+        return matrix;
+
+
     }
     addJoint(jointName,jointCoordinate)
     {
@@ -35,16 +49,15 @@ class link{
         let g=document.createElementNS('http://www.w3.org/2000/svg', 'g');
         g.setAttributeNS(null,'id',this.id);
         g.setAttributeNS(null,"transform",this.transform);
-        const path_str=this.path.split('#');
-        const style_str=this.style.split('#');
+        
 
        
         
-        for(let i=0;i<path_str.length;i++)
+        for(let i=0;i<this.path.length;i++)
         {
             let p=document.createElementNS('http://www.w3.org/2000/svg','path');
-            p.setAttributeNS(null,'d',path_str[i]);
-            p.setAttributeNS(null,'style',style_str[i]);
+            p.setAttributeNS(null,'d',this.path[i]);
+            p.setAttributeNS(null,'style',this.style[i]);
 
             g.appendChild(p)
         }
@@ -66,7 +79,49 @@ class link{
 
     addToCanvas(canv)
     {
+        var ctx = canv.getContext("2d");
+        ctx.setTransform(this.numericalT[0],this.numericalT[1],this.numericalT[2],this.numericalT[3],this.numericalT[4],
+            this.numericalT  [5]);
 
+        for(let i=0;i<this.path.length;i++)
+        {   
+            ctx.beginPath(); //clear any path which mayhave been stored earlier
+            const p=new Path2D(this.path[i]);
+
+            // a typical style in svg looks like " "stroke:black;fill:rgb(251,109,10);stroke-width:1""
+            // we have to extract these elements and add them to canvas
+            //
+            const styles=this.style[i].split(";")
+            for(let j=0;j<styles.length;j++)
+            {
+               let style_val=styles[j].split(':');
+               switch(style_val[0])
+               {
+                case 'stroke':
+                    ctx.strokeStyle=style_val[1];
+                    break;
+                case 'fill':
+                    ctx.fillStyle=style_val[1];
+                    break;
+                case 'stroke-width':
+                    ctx.lineWidth=2;//style_val[1]*1;
+                
+               }
+              
+            
+            }
+            ctx.stroke(p);
+            ctx.fill(p);
+        }
+
+        for(let i=0;i<this.joints.length;i++)
+        {
+            ctx.beginPath();
+            ctx.arc(this.joints[i].x,this.joints[i].y,2,0,Math.PI*2);
+            ctx.fillStyle='blue';
+            ctx.fill();
+
+        }
     }
 }
 

@@ -9,7 +9,7 @@ canvas
 }
 
 .container{
-    width:1200px;
+    display: flex;
 }
 .draw-area
 {
