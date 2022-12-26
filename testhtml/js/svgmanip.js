@@ -8,6 +8,26 @@ class Point
 }
 
 class link{
+
+    // example link usage
+   /*const link_1=new link(
+        "base-link",
+        "matrix(2,0,0,-2,250,490)",
+        //separate multiple path with #
+        "M -17.5 0 h 35 L 10.75 31.31 A 11 11 180 0 1 -10.75 31.31 Z",
+        "stroke:black;fill:rgb(251,109,10);stroke-width:1",
+        [new Point(0,29)]
+    );
+    
+    const link_2=new link( 
+        "base-link-2",
+        "matrix(2,0,0,-2,200,400)",
+        //separate multiple path with #
+        "M -13 0 A 13 13 0 0 1 13 0 v 39 h -26 Z",
+        "stroke:black;fill:rgb(251,109,10);stroke-width:1",
+        [new Point(0,0), new Point(0,39)] // joint coordinates
+    
+    );*/
     constructor(id,transform,path,style="stroke:black;fill=none",joints)
     {
         // id is a string
@@ -27,6 +47,36 @@ class link{
         this.numericalT=this.str2Mat(this.transform);
     }
 
+    setTransMat(a,b,c,d,e,f)
+    {
+        this.numericalT=[a,b,c,d,e,f];
+        this.transform="matrix("+ a +","+ b +","+ c +","+ d +","+ e +","+ f +")"; 
+        console.log(" Matrix was changed to"+this.transform+", "+this.numericalT) ;
+    }
+
+    getTransMat()
+    {
+        return this.numericalT; 
+    }
+
+    applyTrans(rot,trans)
+    {
+        //apply a matrix transformation to the current transform mat
+        // rot has 4 elements in the form [w,x,y,z] and trans is [p,q]
+        // if we write it in matrix form the original trans is [a c;b d]*[w y;x z]
+        // [aw+cx ay+cz;bw+dx by+dz]  for translation it is e=e+p ,f=f+q
+
+        let a=this.numericalT[0]*rot[0]+this.numericalT[2]*rot[1]; //a=aw+cx
+        let b=this.numericalT[1]*rot[0]+this.numericalT[3]*rot[1]; //b=bw+dx
+        let c=this.numericalT[0]*rot[2]+this.numericalT[2]*rot[3]; //c=ay+cz
+        let d=this.numericalT[1]*rot[2]+this.numericalT[3]*rot[3]; //d=by+dz
+
+        let e=this.numericalT[4]+trans[0];
+        let f=this.numericalT[5]+trans[1];
+
+        this.setTransMat(a,b,c,d,e,f);
+
+    }
     str2Mat(transform)
     {
         // the transform matrix is given in a string of the form "matrix(a,b,c,d,e,f)"
@@ -77,9 +127,9 @@ class link{
         return g;
     }
 
-    addToCanvas(canv)
+    addToCanvas(ctx)
     {
-        var ctx = canv.getContext("2d");
+        ctx.save(); // so as not to change th context
         ctx.setTransform(this.numericalT[0],this.numericalT[1],this.numericalT[2],this.numericalT[3],this.numericalT[4],
             this.numericalT  [5]);
 
@@ -91,10 +141,10 @@ class link{
             // a typical style in svg looks like " "stroke:black;fill:rgb(251,109,10);stroke-width:1""
             // we have to extract these elements and add them to canvas
             //
-            const styles=this.style[i].split(";")
+            const styles=this.style[i].split(";") //we spilt to get each property
             for(let j=0;j<styles.length;j++)
             {
-               let style_val=styles[j].split(':');
+               let style_val=styles[j].split(':'); //we then seperate the key and values
                switch(style_val[0])
                {
                 case 'stroke':
@@ -104,7 +154,7 @@ class link{
                     ctx.fillStyle=style_val[1];
                     break;
                 case 'stroke-width':
-                    ctx.lineWidth=2;//style_val[1]*1;
+                    ctx.lineWidth=style_val[1]*2; // seems stroke-width of svg is not same as line width in canvas. needs further investigation
                 
                }
               
@@ -118,10 +168,13 @@ class link{
         {
             ctx.beginPath();
             ctx.arc(this.joints[i].x,this.joints[i].y,2,0,Math.PI*2);
+            ctx.closePath();
+            ctx.lineWidth=1;
             ctx.fillStyle='blue';
             ctx.fill();
 
         }
+        ctx.restore();
     }
 }
 
