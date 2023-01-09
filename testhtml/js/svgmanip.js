@@ -1,3 +1,6 @@
+
+
+
 class Point
 {
     constructor(x,y)
@@ -44,37 +47,65 @@ class link{
         this.style=style.split('#');
         this.joints=joints; //coordinate of joints i.e where they can connects
         this.jointCount=0;
-        this.numericalT=this.str2Mat(this.transform);
+        this.matrixT=matx.zeros(3,3);
+        this.matrixT=this.str2Mat(this.transform);
+        this.parent=null;
+        this.child=null;
+        
+
     }
 
-    setTransMat(a,b,c,d,e,f)
+    setTransMat(matA)
     {
-        this.numericalT=[a,b,c,d,e,f];
+        let a=matA[0][0];
+        let b=matA[1][0];
+        let c=matA[0][1];
+        let d=matA[1][1];
+        let e=matA[0][2];
+        let f=matA[1][2];
+        this.matrixT=[[a,c,e],
+                      [b,d,f],
+                      [0,0,1]];
         this.transform="matrix("+ a +","+ b +","+ c +","+ d +","+ e +","+ f +")"; 
-        console.log(" Matrix was changed to"+this.transform+", "+this.numericalT) ;
+        console.log(" Matrix was changed to"+this.transform+", "+this.matrixT) ;
     }
 
     getTransMat()
     {
-        return this.numericalT; 
+        return this.matrixT; 
     }
 
-    applyTrans(rot,trans)
+    applyTrans(transformMatrix)
     {
         //apply a matrix transformation to the current transform mat
-        // rot has 4 elements in the form [w,x,y,z] and trans is [p,q]
-        // if we write it in matrix form the original trans is [a c;b d]*[w y;x z]
-        // [aw+cx ay+cz;bw+dx by+dz]  for translation it is e=e+p ,f=f+q
+        //transformMatrix is a 3x3 homogenous matrix
 
-        let a=this.numericalT[0]*rot[0]+this.numericalT[2]*rot[1]; //a=aw+cx
-        let b=this.numericalT[1]*rot[0]+this.numericalT[3]*rot[1]; //b=bw+dx
-        let c=this.numericalT[0]*rot[2]+this.numericalT[2]*rot[3]; //c=ay+cz
-        let d=this.numericalT[1]*rot[2]+this.numericalT[3]*rot[3]; //d=by+dz
+        let A=matx.mult(this.matrixT,transformMatrix);
+        let a=A[0][0];
+        let b=A[1][0];
+        let c=A[0][1];
+        let d=A[1][1];
+        let e=A[0][2];
+        let f=A[1][2];
 
-        let e=this.numericalT[4]+trans[0];
-        let f=this.numericalT[5]+trans[1];
+        let child=this.child;
+        let newT=A;
+        while(child!=null)
+        {
+            // Tpc transformation of child in parent
+            let Tpc=matx.mult(matx.inv(child.parent.matrixT),child.matrixT);
+            newT=matx.mult(newT,Tpc);
+            child.setTransMat(newT);
+            child=child.child;
+            
+        }
 
-        this.setTransMat(a,b,c,d,e,f);
+        this.setTransMat(A);
+
+    }
+    getDet()
+    {
+        // returns the determinant of the transform matrix
 
     }
     str2Mat(transform)
@@ -84,14 +115,46 @@ class link{
         let pattern =/-?[0-9]\d*(\.\d+)?/g;
         let result=transform.match(pattern);
         let matrix=result.map(x=>x*1); // the result[x]*1 converts string to number
-        console.log("the string to number conversion is:"+matrix);
-        return matrix;
+        let matrixT=[[matrix[0],matrix[2],matrix[4]],
+                     [matrix[1],matrix[3],matrix[5]],
+                    [0,0,1]];
+        console.log("the string to number conversion is:"+matrixT);
+        return matrixT;
 
 
     }
     addJoint(jointName,jointCoordinate)
     {
 
+    }
+
+    setParent(parent)
+    {
+        // sets the parent element of the link.
+        this.parent=parent;
+        let parentTransform=this.parent.getTransMat();
+        let parentJoint=this.parent.joints;
+        // parent in world =T_01
+        // this in world   =T_02
+        // this in parent=T_12=inv(T_01)*T_O2
+        let T_12=(matx.mult(matx.inv(parentTransform),this.matrixT));
+
+        ///move joint to joint in parent
+        T_12[0][2]=parentJoint[0].x;
+        T_12[1][2]=parentJoint[0].y;
+        
+        
+
+        // transfrom back to world coordinates
+        //T_O2=T_01*T12;
+        let t02=matx.mult(parentTransform,T_12);
+        this.setTransMat(t02);
+
+    }
+
+    setChild(child)
+    {
+        this.child=child;
     }
 
     createSVGElement()
@@ -130,8 +193,14 @@ class link{
     addToCanvas(ctx)
     {
         ctx.save(); // so as not to change th context
-        ctx.setTransform(this.numericalT[0],this.numericalT[1],this.numericalT[2],this.numericalT[3],this.numericalT[4],
-            this.numericalT  [5]);
+        let A=this.matrixT;
+        let a=A[0][0];
+        let b=A[1][0];
+        let c=A[0][1];
+        let d=A[1][1];
+        let e=A[0][2];
+        let f=A[1][2];
+        ctx.setTransform(a,b,c,d,e,f);
 
         for(let i=0;i<this.path.length;i++)
         {   
@@ -200,4 +269,9 @@ function calcIntersectionPt()
     let r2=Math.pow((x-c_x),2)+Math.pow(y-c_y,2)
     console.log("the radius to the square="+r2)
     console.log("x= " +x +", y="+y);
+}
+
+function RowEchelon()
+{
+
 }
